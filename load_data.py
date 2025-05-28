@@ -59,5 +59,6 @@ if __name__ == "__main__":
     with open('neo4j_data.json', 'w') as f:
         json.dump(data, f, indent=4)
     
+    requests.delete("http://localhost:5000/")
     response = requests.post("http://localhost:5000/load-json")
     print(response.json())

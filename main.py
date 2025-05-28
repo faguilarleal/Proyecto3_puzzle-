@@ -50,6 +50,7 @@ def create_nodes(tx, nodes):
             active=node["active"]
         )
 
+# Method for inserting relationship
 def create_relationship(tx, relationships):
     for rel in relationships:
         tx.run(
@@ -65,8 +66,14 @@ def create_relationship(tx, relationships):
             pos=rel["posicion"]
         )
 
-
-# Method for inserting relationship
+# Method for deleting all nodes
+def delete_all(tx):
+    tx.run(
+        """
+        MATCH (n)
+        DETACH DELETE n
+        """
+    )
 
 
 
@@ -86,6 +93,12 @@ def fetch_nodes():
         return jsonify(nodes)
     except Exception as e:
         return jsonify(error=str(e)), 500
+
+@app.route("/", methods=["DELETE"])
+def delete_nodes():
+    with driver.session() as session:
+        session.execute_write(delete_all)
+    return jsonify(message="DB Clear")
 
 @app.route("/load-json", methods=["POST"])
 def load_json_to_neo4j():
