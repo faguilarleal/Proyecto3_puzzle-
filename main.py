@@ -42,11 +42,12 @@ def create_nodes(tx, nodes):
         tx.run(
             """
             MERGE (n:Piece {id: $id})
-            SET n.emisores = $emisores, n.receptores = $receptores
+            SET n.emisores = $emisores, n.receptores = $receptores, n.activa = $active
             """,
             id=node["id"],
             emisores=node["emisores"],
-            receptores=node["receptores"]
+            receptores=node["receptores"],
+            active=node["active"]
         )
 
 def create_relationship(tx, relationships):

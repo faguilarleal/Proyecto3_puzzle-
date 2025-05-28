@@ -9,6 +9,7 @@ def add_piece(piece_id, senders, receivers):
         "id": piece_id,
         "emisores": senders,
         "receptores": receivers,
+        "active": False
     })
 
 def add_adjacence(piece_id, piece_adj_id, sender, receiver, position):
