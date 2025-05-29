@@ -135,6 +135,17 @@ def update_node_visitado(node_id):
             """,
             id=node_id
         )
+
+# Method for update visitado in node
+def update_node_existente(node_id):
+    with driver.session() as session:
+        r = session.run(
+            """
+            MATCH (n {id: $id})
+            SET n.activa = false
+            """,
+            id=node_id
+        )
         
 
 
@@ -229,6 +240,13 @@ def marcar_nodo_visitado(node_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route("/nodes/activo/<int:node_id>", methods=["PUT"])
+def marcar_nodo_inactivo(node_id):
+    try:
+        update_node_existente(node_id)
+        return jsonify({"mensaje": f"Nodo {node_id} actualizado con activo=false"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
     app.run(debug=True)
