@@ -40,72 +40,54 @@ def assemble_all(driver, start_piece_id):
     agrupando conexiones activas y registrando huecos por piezas inactivas.
     """
     visited = set()
-    processed_edges = set()
-    grouped_edges = {}    # {(a,b): [ {emisor,receptor,posicion}, … ]}
-    missing_edges = []    # [ {from:a, to:b, pos:posición}, … ]
+    steps = []
+    advertencias = set()
+    piezas_disponibles = set()
 
     def dfs(tx, pid):
         if pid in visited:
             return
         visited.add(pid)
 
-        for rec in tx.run(
-            """
-            MATCH (p:Piece {id: $pid})-[r:es_adj_a]->(adj:Piece)
-            WHERE r.visitado = false
-            RETURN
-              adj.id       AS id,
-              adj.activa   AS activa,
-              r.emisor     AS emisor,
-              r.receptor   AS receptor,
-              r.posicion   AS posicion
-            """,
-            {"pid": pid}
-        ):
-            a, b = pid, rec["id"]
-            edge_key = tuple(sorted((a, b)))
-            if edge_key in processed_edges:
-                continue
-            processed_edges.add(edge_key)
+        piezas_disponibles.add(pid)
 
-            # Marcamos la relación como visitada en la DB
-            tx.run(
-                """
-                MATCH (x:Piece {id:$a})-[r]-(y:Piece {id:$b})
-                SET r.visitado = true
-                """,
-                {"a": a, "b": b}
+        neighbors = get_adjacent(tx, pid)
+        for rec in neighbors:
+            target = rec["id"]
+            if rec["activa"] is False:
+                advertencias.add(target)
+            steps.append(
+                f"Pieza {pid}: conecta tu emisor “{rec['emisor']}” "
+                f"con el receptor “{rec['receptor']}” de la pieza {target} "
+                f"por el lado “{rec['posicion']}”."
+            )
+            dfs(tx, target)
+
+    with driver.session() as session:
+        session.read_transaction(dfs, start_piece_id)
+
+    # Preparar advertencias si hay piezas inactivas usadas
+    advertencias_output = []
+    if advertencias:
+        advertencias_output.append("\n---\nADVERTENCIAS (PIEZAS FALTANTES):")
+        for pieza in sorted(advertencias):
+            lados = []
+            with driver.session() as s:
+                result = s.run("""
+                    MATCH (p:Piece)-[r:es_adj_a]->(f:Piece {id: $id})
+                    RETURN DISTINCT p.id AS origen, r.posicion AS lado
+                """, id=pieza).data()
+                for r in result:
+                    lados.append((r["origen"], r["lado"]))
+
+            conectadas = ", ".join(f"pieza {o} por el lado {l}" for o, l in lados)
+            advertencias_output.append(
+                f"Tenga en cuenta que la pieza {pieza} NO está disponible; "
+                f"quedará un hueco conectado a la(s) {conectadas}."
             )
 
-            if not rec["activa"]:
-                # Pieza b faltante → registrar hueco
-                missing_edges.append({
-                    "from": a,
-                    "to": b,
-                    "pos": rec["posicion"]
-                })
-            else:
-                # Pieza b activa → agrupar conexión y seguir DFS
-                grouped_edges.setdefault(edge_key, []).append({
-                    "emisor":   rec["emisor"],
-                    "receptor": rec["receptor"],
-                    "posicion": rec["posicion"]
-                })
-                dfs(tx, b)
-
-    # Ejecutamos el DFS desde el driver
-    with driver.session() as session:
-        session.write_transaction(lambda tx: dfs(tx, start_piece_id))
-
-    # Formateamos las instrucciones
-    from instructions import (
-        format_grouped_instructions,
-        format_missing_instructions
-    )
-    steps = format_grouped_instructions(grouped_edges)
-    if missing_edges:
-        steps += format_missing_instructions(missing_edges)
-    return steps
+    # Devolver advertencias primero
+    return advertencias_output + steps
 
 def group_connections(pieza_id, conexiones):
 
