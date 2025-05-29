@@ -3,7 +3,7 @@ from neo4j import GraphDatabase
 from dotenv import load_dotenv
 from algorithm import get_adjacent
 from instructions import format_grouped_instructions
-from algorithm import assemble_all
+from algorithm import assemble_all, group_connections
 
 
 
@@ -200,7 +200,9 @@ def assemble(piece_id):
 def assemble_steps(piece_id):
     with driver.session() as session:
         vecinos = session.execute_read(get_adjacent, piece_id)
-    pasos = format_instructions(piece_id, vecinos)
+    
+    agrupados = group_connections(piece_id, vecinos)
+    pasos = format_grouped_instructions(agrupados)
     return jsonify(pasos), 200
 
 @app.route("/assemble/full/<int:piece_id>", methods=["GET"])

@@ -102,7 +102,20 @@ def assemble_all(driver, start_piece_id):
     return steps
 
 
+def group_connections(pieza_id, conexiones):
 
+    grouped = {}
+
+    for rec in conexiones:
+        a = pieza_id
+        b = rec["id"]
+        key = (min(a, b), max(a, b))  # Ignora orden (↔)
+
+        if key not in grouped:
+            grouped[key] = []
+        grouped[key].append(rec)
+
+    return grouped
 
 def mark_visited(tx, piece_id):
     tx.run(
