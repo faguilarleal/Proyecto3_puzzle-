@@ -5,6 +5,9 @@ import json
 import os
 import random
 
+
+
+
 def get_random(driver):
     with driver.session() as session:
         result = session.run("MATCH (n) RETURN n LIMIT 100")
@@ -16,11 +19,18 @@ def get_random(driver):
 
 def get_adjacent(tx, piece_id):
     query = """
-    MATCH (p:Piece {id: $piece_id})--(adj:Piece)
-    RETURN DISTINCT adj
+    MATCH (p:Piece {id: $piece_id})-[r:es_adj_a]->(adj:Piece)
+    RETURN DISTINCT
+      adj.id      AS id,
+      adj.emisores   AS emisores,
+      adj.receptores AS receptores,
+      adj.activa     AS activa,
+      r.emisor   AS emisor,
+      r.receptor AS receptor,
+      r.posicion AS posicion
     """
     result = tx.run(query, {"piece_id": piece_id})
-    return [record["adj"] for record in result]
+    return [record.data() for record in result]
 
 
 def mark_visited(tx, piece_id):

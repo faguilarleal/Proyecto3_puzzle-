@@ -2,6 +2,8 @@ from flask import Flask, jsonify
 from neo4j import GraphDatabase
 from dotenv import load_dotenv
 from algorithm import get_adjacent
+from instructions import format_instructions
+
 
 import json
 import os
@@ -122,21 +124,18 @@ def assemble(piece_id):
         with driver.session() as session:
             vecinos = session.execute_read(get_adjacent, piece_id)
 
-        result = []
-        for node in vecinos:
-            props = dict(node)
-            result.append({
-                "id":         props["id"],
-                "emisores":   props.get("emisores", []),
-                "receptores": props.get("receptores", []),
-                "activa":     props.get("activa", False)
-            })
-
-        return jsonify(result), 200
+        return jsonify(vecinos), 200
 
     except Exception as e:
         return jsonify(error=str(e)), 500
 
+
+@app.route("/assemble/<int:piece_id>/steps", methods=["GET"])
+def assemble_steps(piece_id):
+    with driver.session() as session:
+        vecinos = session.execute_read(get_adjacent, piece_id)
+    pasos = format_instructions(piece_id, vecinos)
+    return jsonify(pasos), 200
 
 if __name__ == "__main__":
     app.run(debug=True)
