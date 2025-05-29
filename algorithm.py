@@ -58,8 +58,8 @@ def assemble_all(driver, start_piece_id):
             if not activa:
                 # Mostrar advertencia en el momento de colocar la pieza inactiva
                 steps.append(
-                    f"ADVERTENCIA: la pieza {target} NO está disponible; "
-                    f"se intentó conectar desde la pieza {pid} por el lado “{lado}”."
+                    "ADVERTENCIA Tenga en cuenta que la pieza {target} NO está disponible; "
+                    f"quedará un hueco conectado a la(s) {lado}."
                 )
 
             steps.append(
