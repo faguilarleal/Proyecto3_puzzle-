@@ -41,53 +41,39 @@ def assemble_all(driver, start_piece_id):
     """
     visited = set()
     steps = []
-    advertencias = set()
-    piezas_disponibles = set()
 
     def dfs(tx, pid):
         if pid in visited:
             return
         visited.add(pid)
 
-        piezas_disponibles.add(pid)
-
         neighbors = get_adjacent(tx, pid)
         for rec in neighbors:
             target = rec["id"]
-            if rec["activa"] is False:
-                advertencias.add(target)
+            emisor = rec["emisor"]
+            receptor = rec["receptor"]
+            lado = rec["posicion"]
+            activa = rec.get("activa", True)
+
+            if not activa:
+                # Mostrar advertencia en el momento de colocar la pieza inactiva
+                steps.append(
+                    f"/////// ADVERTENCIA: la pieza {target} NO está disponible == "
+                    f"se intentó conectar desde la pieza {pid} por el lado “{lado}” /////////"
+                )
+
             steps.append(
-                f"Pieza {pid}: conecta tu emisor “{rec['emisor']}” "
-                f"con el receptor “{rec['receptor']}” de la pieza {target} "
-                f"por el lado “{rec['posicion']}”."
+                f"Pieza {pid}: conecta tu emisor “{emisor}” "
+                f"con el receptor “{receptor}” de la pieza {target} "
+                f"por el lado “{lado}”."
             )
+
             dfs(tx, target)
 
     with driver.session() as session:
         session.read_transaction(dfs, start_piece_id)
 
-    # Preparar advertencias si hay piezas inactivas usadas
-    advertencias_output = []
-    if advertencias:
-        advertencias_output.append("\n---\nADVERTENCIAS (PIEZAS FALTANTES):")
-        for pieza in sorted(advertencias):
-            lados = []
-            with driver.session() as s:
-                result = s.run("""
-                    MATCH (p:Piece)-[r:es_adj_a]->(f:Piece {id: $id})
-                    RETURN DISTINCT p.id AS origen, r.posicion AS lado
-                """, id=pieza).data()
-                for r in result:
-                    lados.append((r["origen"], r["lado"]))
-
-            conectadas = ", ".join(f"pieza {o} por el lado {l}" for o, l in lados)
-            advertencias_output.append(
-                f"Tenga en cuenta que la pieza {pieza} NO está disponible; "
-                f"quedará un hueco conectado a la(s) {conectadas}."
-            )
-
-    # Devolver advertencias primero
-    return advertencias_output + steps
+    return steps
 
 def group_connections(pieza_id, conexiones):
 
