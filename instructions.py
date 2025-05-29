@@ -1,15 +1,24 @@
-def format_instructions(piece_id, adjacent_list):
+# instructions.py
+
+def format_grouped_instructions(grouped):
     """
-    Dada la pieza de inicio y la lista de vecinos con
-    detalles de relación, devuelve una lista de strings
-    con los pasos de montaje.
+    grouped: dict donde cada clave es (a,b) y el valor
+    es la lista de conexiones (rec dicts) entre pieza a y pieza b.
     """
     steps = []
-    for rec in adjacent_list:
-        # ejemplo:
-        steps.append(
-            f"Pieza {piece_id}: conecta tu emisor “{rec['emisor']}” "
-            f"con el receptor “{rec['receptor']}” de la pieza {rec['id']} "
-            f"por el lado “{rec['posicion']}”."
-        )
+    for (a, b), recs in grouped.items():
+        if len(recs) == 2:
+            r1, r2 = recs
+            steps.append(
+                f"Conecta pieza {a} ↔ pieza {b}: "
+                f"{r1['emisor']}→{r1['receptor']} ({r1['posicion']}) y "
+                f"{r2['emisor']}→{r2['receptor']} ({r2['posicion']})."
+            )
+        else:
+            r = recs[0]
+            steps.append(
+                f"Pieza {a}: conecta emisor “{r['emisor']}” "
+                f"con receptor “{r['receptor']}” de pieza {b} "
+                f"por lado “{r['posicion']}”."
+            )
     return steps

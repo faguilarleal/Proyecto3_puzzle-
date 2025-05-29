@@ -2,7 +2,7 @@ from flask import Flask, jsonify
 from neo4j import GraphDatabase
 from dotenv import load_dotenv
 from algorithm import get_adjacent
-from instructions import format_instructions
+from instructions import format_grouped_instructions
 from algorithm import assemble_all
 
 

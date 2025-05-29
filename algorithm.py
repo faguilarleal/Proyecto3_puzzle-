@@ -31,28 +31,76 @@ def get_adjacent(tx, piece_id):
     return [record.data() for record in result]
 
 
+# algorithm.py
+
 def assemble_all(driver, start_piece_id):
-    visited = set()
+    visited_nodes = set()
+    processed_edges = set()   # aquí guardaremos tuplas (min_id, max_id)
     steps = []
 
     def dfs(tx, pid):
-        if pid in visited:
+        if pid in visited_nodes:
             return
-        visited.add(pid)
+        visited_nodes.add(pid)
 
-        neighbors = get_adjacent(tx, pid)
-        for rec in neighbors:
-            steps.append(
-                f"Pieza {pid}: conecta tu emisor “{rec['emisor']}” "
-                f"con el receptor “{rec['receptor']}” de la pieza {rec['id']} "
-                f"por el lado “{rec['posicion']}”."
+        # obtenemos únicamente relaciones activas (no visitadas en BD, opcional)
+        neighbors = tx.run("""
+            MATCH (p:Piece {id: $pid})-[r:es_adj_a]->(adj:Piece)
+            WHERE r.visitado = false  // si quieres filtrar en BD
+            RETURN adj.id   AS id,
+                   r.emisor AS emisor,
+                   r.receptor AS receptor,
+                   r.posicion AS posicion
+        """, {"pid": pid})
+        recs = [rec.data() for rec in neighbors]
+
+        for rec in recs:
+            a, b = pid, rec["id"]
+            edge_key = tuple(sorted((a, b)))
+
+            # si ya procesamos A<->B, saltamos
+            if edge_key in processed_edges:
+                continue
+
+            # marcamos en memoria (y opcionalmente en BD) como procesado
+            processed_edges.add(edge_key)
+            # session.write / tx.run(...)
+            tx.run("""
+                MATCH (x:Piece {id:$a})-[r]-(y:Piece {id:$b})
+                SET r.visitado = true
+            """, {"a": a, "b": b})
+
+            # buscamos la relación inversa (B->A) para combinar
+            inverse = next(
+                (x for x in recs
+                 if x["id"] == a and x["emisor"] == rec["receptor"] and x["receptor"] == rec["emisor"]),
+                None
             )
-            dfs(tx, rec['id'])
+
+            if inverse:
+                # si existe la mitad inversa en la misma llamada, la combinamos
+                steps.append(
+                    f"Conecta pieza {a} ↔ pieza {b}: "
+                    f"{rec['emisor']}→{rec['receptor']} ({rec['posicion']}) y "
+                    f"{inverse['emisor']}→{inverse['receptor']} ({inverse['posicion']})."
+                )
+            else:
+                # si no, emitimos la instrucción normal
+                steps.append(
+                    f"Pieza {a}: conecta tu emisor “{rec['emisor']}” "
+                    f"con el receptor “{rec['receptor']}” de la pieza {b} "
+                    f"por el lado “{rec['posicion']}”."
+                )
+
+            # seguimos DFS desde el vecino (sólo por el lado A→B)
+            dfs(tx, b)
 
     with driver.session() as session:
-        session.read_transaction(dfs, start_piece_id)
+        # usamos write_transaction porque vamos a actualizar r.visitado
+        session.write_transaction(lambda tx: dfs(tx, start_piece_id))
 
     return steps
+
 
 
 
