@@ -9,7 +9,8 @@ def add_piece(piece_id, senders, receivers):
         "id": piece_id,
         "emisores": senders,
         "receptores": receivers,
-        "active": True
+        "active": True,
+        "visitado":False
     })
 
 def add_adjacence(piece_id, piece_adj_id, sender, receiver, position):
@@ -19,6 +20,7 @@ def add_adjacence(piece_id, piece_adj_id, sender, receiver, position):
         "emisor": sender,
         "receptor": receiver,
         "posicion": position,
+        "visitado": False,
     })
 
 if __name__ == "__main__":

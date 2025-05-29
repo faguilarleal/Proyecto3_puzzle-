@@ -6,7 +6,8 @@
                 "a"
             ],
             "receptores": [],
-            "active": true
+            "active": true,
+            "visitado": false
         },
         {
             "id": 2,
@@ -17,7 +18,8 @@
             "receptores": [
                 "b"
             ],
-            "active": true
+            "active": true,
+            "visitado": false
         },
         {
             "id": 3,
@@ -27,7 +29,8 @@
             "receptores": [
                 "a"
             ],
-            "active": true
+            "active": true,
+            "visitado": false
         },
         {
             "id": 4,
@@ -37,7 +40,8 @@
             "receptores": [
                 "a"
             ],
-            "active": true
+            "active": true,
+            "visitado": false
         },
         {
             "id": 5,
@@ -45,7 +49,8 @@
                 "a"
             ],
             "receptores": [],
-            "active": true
+            "active": true,
+            "visitado": false
         },
         {
             "id": 6,
@@ -55,7 +60,8 @@
             "receptores": [
                 "a"
             ],
-            "active": true
+            "active": true,
+            "visitado": false
         },
         {
             "id": 7,
@@ -65,7 +71,8 @@
                 "b",
                 "c"
             ],
-            "active": true
+            "active": true,
+            "visitado": false
         }
     ],
     "relationships": [
@@ -74,154 +81,176 @@
             "pieceAdjID": 2,
             "emisor": "1a",
             "receptor": "2b",
-            "posicion": "S"
+            "posicion": "S",
+            "visitado": false
         },
         {
             "pieceID": 2,
             "pieceAdjID": 1,
             "emisor": "1a",
             "receptor": "2b",
-            "posicion": "N"
+            "posicion": "N",
+            "visitado": false
         },
         {
             "pieceID": 2,
             "pieceAdjID": 4,
             "emisor": "2a",
             "receptor": "4a",
-            "posicion": "S"
+            "posicion": "S",
+            "visitado": false
         },
         {
             "pieceID": 2,
             "pieceAdjID": 5,
             "emisor": "0",
             "receptor": "0",
-            "posicion": "SE"
+            "posicion": "SE",
+            "visitado": false
         },
         {
             "pieceID": 2,
             "pieceAdjID": 3,
             "emisor": "2c",
             "receptor": "3a",
-            "posicion": "E"
+            "posicion": "E",
+            "visitado": false
         },
         {
             "pieceID": 3,
             "pieceAdjID": 2,
             "emisor": "2c",
             "receptor": "3a",
-            "posicion": "O"
+            "posicion": "O",
+            "visitado": false
         },
         {
             "pieceID": 3,
             "pieceAdjID": 5,
             "emisor": "0",
             "receptor": "0",
-            "posicion": "S"
+            "posicion": "S",
+            "visitado": false
         },
         {
             "pieceID": 3,
             "pieceAdjID": 6,
             "emisor": "3b",
             "receptor": "6a",
-            "posicion": "E"
+            "posicion": "E",
+            "visitado": false
         },
         {
             "pieceID": 4,
             "pieceAdjID": 2,
             "emisor": "2a",
             "receptor": "4a",
-            "posicion": "N"
+            "posicion": "N",
+            "visitado": false
         },
         {
             "pieceID": 4,
             "pieceAdjID": 5,
             "emisor": "0",
             "receptor": "0",
-            "posicion": "E"
+            "posicion": "E",
+            "visitado": false
         },
         {
             "pieceID": 4,
             "pieceAdjID": 7,
             "emisor": "4b",
             "receptor": "7a",
-            "posicion": "S"
+            "posicion": "S",
+            "visitado": false
         },
         {
             "pieceID": 5,
             "pieceAdjID": 2,
             "emisor": "0",
             "receptor": "0",
-            "posicion": "NO"
+            "posicion": "NO",
+            "visitado": false
         },
         {
             "pieceID": 5,
             "pieceAdjID": 3,
             "emisor": "0",
             "receptor": "0",
-            "posicion": "NE"
+            "posicion": "NE",
+            "visitado": false
         },
         {
             "pieceID": 5,
             "pieceAdjID": 6,
             "emisor": "0",
             "receptor": "0",
-            "posicion": "E"
+            "posicion": "E",
+            "visitado": false
         },
         {
             "pieceID": 5,
             "pieceAdjID": 7,
             "emisor": "5a",
             "receptor": "7b",
-            "posicion": "S"
+            "posicion": "S",
+            "visitado": false
         },
         {
             "pieceID": 5,
             "pieceAdjID": 4,
             "emisor": "0",
             "receptor": "0",
-            "posicion": "O"
+            "posicion": "O",
+            "visitado": false
         },
         {
             "pieceID": 6,
             "pieceAdjID": 3,
             "emisor": "3b",
             "receptor": "6a",
-            "posicion": "O"
+            "posicion": "O",
+            "visitado": false
         },
         {
             "pieceID": 6,
             "pieceAdjID": 5,
             "emisor": "0",
             "receptor": "0",
-            "posicion": "SO"
+            "posicion": "SO",
+            "visitado": false
         },
         {
             "pieceID": 6,
             "pieceAdjID": 7,
             "emisor": "6b",
             "receptor": "7c",
-            "posicion": "S"
+            "posicion": "S",
+            "visitado": false
         },
         {
             "pieceID": 7,
             "pieceAdjID": 4,
             "emisor": "4b",
             "receptor": "7a",
-            "posicion": "N"
+            "posicion": "N",
+            "visitado": false
         },
         {
             "pieceID": 7,
             "pieceAdjID": 5,
             "emisor": "5a",
             "receptor": "7b",
-            "posicion": "N"
+            "posicion": "N",
+            "visitado": false
         },
         {
             "pieceID": 7,
             "pieceAdjID": 6,
             "emisor": "6b",
             "receptor": "7c",
-            "posicion": "N"
+            "posicion": "N",
+            "visitado": false
         }
     ]
 }
