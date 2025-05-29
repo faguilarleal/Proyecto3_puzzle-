@@ -3,10 +3,6 @@ from algorithm import get_adjacent
 # instructions.py
 
 def format_grouped_instructions(grouped):
-    """
-    grouped: dict donde cada clave es (a,b) y el valor
-    es la lista de conexiones (rec dicts) entre pieza a y pieza b.
-    """
     steps = []
     for (a, b), recs in grouped.items():
         if len(recs) == 2:
@@ -25,32 +21,21 @@ def format_grouped_instructions(grouped):
             )
     return steps
 
-
-def assemble_all_grouped(driver, start_piece_id):
-    visited = set()
-    all_conns = []
-
-    def dfs(tx, pid):
-        if pid in visited:
-            return
-        visited.add(pid)
-
-        vecinos = get_adjacent(tx, pid)
-        for v in vecinos:
-            all_conns.append({**v, "from": pid})
-            dfs(tx, v["id"])
-
-    with driver.session() as session:
-        session.read_transaction(dfs, start_piece_id)
-
-    # Agrupar conexiones por (a,b)
-    agrupados = {}
-    for conn in all_conns:
-        a = conn["from"]
-        b = conn["id"]
-        key = tuple(sorted([a, b]))
-        if key not in agrupados:
-            agrupados[key] = []
-        agrupados[key].append(conn)
-
-    return format_grouped_instructions(agrupados)
+def format_missing_instructions(missing):
+    """
+    missing: lista de dicts {"from":a,"to":b,"pos":posicion}
+    """
+    steps = ["\n---\nADVERTENCIAS (PIEZAS FALTANTES):"]
+    # agrupamos por pieza faltante para un mensaje más compacto
+    holes = {}
+    for m in missing:
+        holes.setdefault(m["to"], []).append(m)
+    for hole_id, infos in holes.items():
+        vecinos = [str(i["from"]) for i in infos]
+        lados   = [i["pos"] for i in infos]
+        steps.append(
+            f"Tenga en cuenta que la pieza {hole_id} NO está disponible; "
+            f"quedará un hueco conectado a la(s) pieza(s) {', '.join(vecinos)} "
+            f"por el/los lado(s) {', '.join(lados)}."
+        )
+    return steps

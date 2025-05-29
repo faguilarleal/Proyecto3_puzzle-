@@ -33,72 +33,67 @@ def get_adjacent(tx, piece_id):
 
 # algorithm.py
 
+# algorithm.py (fragmento adaptado)
+
 def assemble_all(driver, start_piece_id):
-    visited_nodes = set()
-    processed_edges = set()   # aquí guardaremos tuplas (min_id, max_id)
-    steps = []
+    visited = set()
+    processed_edges = set()
+    grouped_edges = {}    # {(a,b): [rec,…]}
+    missing_edges = []    # list of dicts: {"from": a, "to": b, "pos": posicion}
 
     def dfs(tx, pid):
-        if pid in visited_nodes:
+        if pid in visited:
             return
-        visited_nodes.add(pid)
+        visited.add(pid)
 
-        # obtenemos únicamente relaciones activas (no visitadas en BD, opcional)
-        neighbors = tx.run("""
+        results = tx.run("""
             MATCH (p:Piece {id: $pid})-[r:es_adj_a]->(adj:Piece)
-            WHERE r.visitado = false  // si quieres filtrar en BD
-            RETURN adj.id   AS id,
-                   r.emisor AS emisor,
+            WHERE r.visitado = false
+            RETURN adj.id     AS id,
+                   adj.activa AS activa,
+                   r.emisor   AS emisor,
                    r.receptor AS receptor,
                    r.posicion AS posicion
         """, {"pid": pid})
-        recs = [rec.data() for rec in neighbors]
 
-        for rec in recs:
+        for rec in results:
             a, b = pid, rec["id"]
             edge_key = tuple(sorted((a, b)))
-
-            # si ya procesamos A<->B, saltamos
             if edge_key in processed_edges:
                 continue
-
-            # marcamos en memoria (y opcionalmente en BD) como procesado
             processed_edges.add(edge_key)
-            # session.write / tx.run(...)
+            # marca visitado en BD
             tx.run("""
                 MATCH (x:Piece {id:$a})-[r]-(y:Piece {id:$b})
                 SET r.visitado = true
             """, {"a": a, "b": b})
 
-            # buscamos la relación inversa (B->A) para combinar
-            inverse = next(
-                (x for x in recs
-                 if x["id"] == a and x["emisor"] == rec["receptor"] and x["receptor"] == rec["emisor"]),
-                None
-            )
-
-            if inverse:
-                # si existe la mitad inversa en la misma llamada, la combinamos
-                steps.append(
-                    f"Conecta pieza {a} ↔ pieza {b}: "
-                    f"{rec['emisor']}→{rec['receptor']} ({rec['posicion']}) y "
-                    f"{inverse['emisor']}→{inverse['receptor']} ({inverse['posicion']})."
-                )
+            if not rec["activa"]:
+                # pieza b NO está disponible → registro de hueco
+                missing_edges.append({
+                    "from": a,
+                    "to": b,
+                    "pos": rec["posicion"]
+                })
             else:
-                # si no, emitimos la instrucción normal
-                steps.append(
-                    f"Pieza {a}: conecta tu emisor “{rec['emisor']}” "
-                    f"con el receptor “{rec['receptor']}” de la pieza {b} "
-                    f"por el lado “{rec['posicion']}”."
-                )
+                # pieza activa → la agrupamos normalmente
+                grouped_edges.setdefault(edge_key, []).append({
+                    "emisor": rec["emisor"],
+                    "receptor": rec["receptor"],
+                    "posicion": rec["posicion"]
+                })
+                # solo recorremos DFS hacia piezas activas
+                dfs(tx, b)
 
-            # seguimos DFS desde el vecino (sólo por el lado A→B)
-            dfs(tx, b)
+    with driver.session() as sess:
+        sess.write_transaction(lambda tx: dfs(tx, start_piece_id))
 
-    with driver.session() as session:
-        # usamos write_transaction porque vamos a actualizar r.visitado
-        session.write_transaction(lambda tx: dfs(tx, start_piece_id))
-
+    # luego formateamos:
+    from instructions import format_grouped_instructions, format_missing_instructions
+    steps = []
+    steps += format_grouped_instructions(grouped_edges)
+    if missing_edges:
+        steps += format_missing_instructions(missing_edges)
     return steps
 
 
