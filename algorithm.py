@@ -13,15 +13,15 @@ def get_random(driver):
             return random.choice(nodes)
         
 
+
 def get_adjacent(tx, piece_id):
-    result = tx.run(
-            """
-            MATCH (p:Pieza id: $piece_id})--(adyacente:Pieza)
-            return adyacente
-            """,
-            piece_id= piece_id
-        )
-    return  [record["adyacente"] for record in result]
+    query = """
+    MATCH (p:Piece {id: $piece_id})--(adj:Piece)
+    RETURN DISTINCT adj
+    """
+    result = tx.run(query, {"piece_id": piece_id})
+    return [record["adj"] for record in result]
+
 
 def mark_visited(tx, piece_id):
     tx.run(
