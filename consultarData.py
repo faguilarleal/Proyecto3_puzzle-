@@ -5,7 +5,7 @@ def resolver_rompecabezas():
     try:
         piece_id = int(input("Ingresa el ID de la pieza inicial: "))
     except ValueError:
-        print("El ID debe ser un numero entero.")
+        print("El ID debe ser un número entero.")
         return
 
     url = f"http://localhost:5000/assemble/full/{piece_id}"
@@ -17,14 +17,20 @@ def resolver_rompecabezas():
         pasos = response.json()
 
         if not pasos:
-            print("No se encontraron pasos, revise las  relaciones desde esta pieza")
-        else:
-            print("=== PASOS PARA RESOLVER ===")
-            for i, paso in enumerate(pasos, start=1):
-                print(f"{i}. {paso}")
-                
+            print("No se encontraron pasos, revise las relaciones desde esta pieza.")
+            return
+
+        print("=== PASOS PARA RESOLVER ===\n")
+        count = 1
+        for paso in pasos:
+            if "ADVERTENCIA" in paso or "NO está disponible" in paso:
+                print(f"{paso}")
+            else:
+                print(f"{count}. {paso}")
+                count += 1
+
     except requests.exceptions.ConnectionError:
-        print("No se pudo conectar al servidor Flask")
+        print("No se pudo conectar al servidor Flask. ¿Está corriendo?")
     except Exception as e:
         print("Error al consultar los pasos:", e)
 
