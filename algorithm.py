@@ -16,86 +16,96 @@ def get_random(driver):
 
 
 def get_adjacent(tx, piece_id):
+    """
+    Recupera vecinos no visitados junto con su estado 'activa'
+    y los datos de la relación.
+    """
     query = """
     MATCH (p:Piece {id: $piece_id})-[r:es_adj_a]->(adj:Piece)
-    RETURN DISTINCT
-      adj.id        AS id,
-      adj.emisores  AS emisores,
-      adj.receptores AS receptores,
-      adj.activa    AS activa,
-      r.emisor      AS emisor,
-      r.receptor    AS receptor,
-      r.posicion    AS posicion
+    WHERE r.visitado = false
+    RETURN
+      adj.id       AS id,
+      adj.activa   AS activa,
+      r.emisor     AS emisor,
+      r.receptor   AS receptor,
+      r.posicion   AS posicion
     """
     result = tx.run(query, {"piece_id": piece_id})
     return [record.data() for record in result]
 
 
-# algorithm.py
-
-# algorithm.py (fragmento adaptado)
-
 def assemble_all(driver, start_piece_id):
+    """
+    Recorre en DFS el ensamblaje completo desde start_piece_id,
+    agrupando conexiones activas y registrando huecos por piezas inactivas.
+    """
     visited = set()
     processed_edges = set()
-    grouped_edges = {}    # {(a,b): [rec,…]}
-    missing_edges = []    # list of dicts: {"from": a, "to": b, "pos": posicion}
+    grouped_edges = {}    # {(a,b): [ {emisor,receptor,posicion}, … ]}
+    missing_edges = []    # [ {from:a, to:b, pos:posición}, … ]
 
     def dfs(tx, pid):
         if pid in visited:
             return
         visited.add(pid)
 
-        results = tx.run("""
+        for rec in tx.run(
+            """
             MATCH (p:Piece {id: $pid})-[r:es_adj_a]->(adj:Piece)
             WHERE r.visitado = false
-            RETURN adj.id     AS id,
-                   adj.activa AS activa,
-                   r.emisor   AS emisor,
-                   r.receptor AS receptor,
-                   r.posicion AS posicion
-        """, {"pid": pid})
-
-        for rec in results:
+            RETURN
+              adj.id       AS id,
+              adj.activa   AS activa,
+              r.emisor     AS emisor,
+              r.receptor   AS receptor,
+              r.posicion   AS posicion
+            """,
+            {"pid": pid}
+        ):
             a, b = pid, rec["id"]
             edge_key = tuple(sorted((a, b)))
             if edge_key in processed_edges:
                 continue
             processed_edges.add(edge_key)
-            # marca visitado en BD
-            tx.run("""
+
+            # Marcamos la relación como visitada en la DB
+            tx.run(
+                """
                 MATCH (x:Piece {id:$a})-[r]-(y:Piece {id:$b})
                 SET r.visitado = true
-            """, {"a": a, "b": b})
+                """,
+                {"a": a, "b": b}
+            )
 
             if not rec["activa"]:
-                # pieza b NO está disponible → registro de hueco
+                # Pieza b faltante → registrar hueco
                 missing_edges.append({
                     "from": a,
                     "to": b,
                     "pos": rec["posicion"]
                 })
             else:
-                # pieza activa → la agrupamos normalmente
+                # Pieza b activa → agrupar conexión y seguir DFS
                 grouped_edges.setdefault(edge_key, []).append({
-                    "emisor": rec["emisor"],
+                    "emisor":   rec["emisor"],
                     "receptor": rec["receptor"],
                     "posicion": rec["posicion"]
                 })
-                # solo recorremos DFS hacia piezas activas
                 dfs(tx, b)
 
-    with driver.session() as sess:
-        sess.write_transaction(lambda tx: dfs(tx, start_piece_id))
+    # Ejecutamos el DFS desde el driver
+    with driver.session() as session:
+        session.write_transaction(lambda tx: dfs(tx, start_piece_id))
 
-    # luego formateamos:
-    from instructions import format_grouped_instructions, format_missing_instructions
-    steps = []
-    steps += format_grouped_instructions(grouped_edges)
+    # Formateamos las instrucciones
+    from instructions import (
+        format_grouped_instructions,
+        format_missing_instructions
+    )
+    steps = format_grouped_instructions(grouped_edges)
     if missing_edges:
         steps += format_missing_instructions(missing_edges)
     return steps
-
 
 def group_connections(pieza_id, conexiones):
 

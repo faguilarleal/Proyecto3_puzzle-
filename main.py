@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from neo4j import GraphDatabase
 from dotenv import load_dotenv
 from algorithm import get_adjacent
@@ -153,6 +153,16 @@ def reset_visitados():
         session.run("MATCH ()-[r:es_adj_a]->() SET r.visitado = false")
 
 
+# --- helper para actualizar "activa" ---
+def update_node_activa(driver, node_id: str, activa: bool):
+    with driver.session() as session:
+        session.run(
+            """
+            MATCH (n:Piece {id: $id})
+            SET n.activa = $activa
+            """,
+            {"id": node_id, "activa": activa}
+        )
 
 app = Flask(__name__)
 
@@ -252,6 +262,25 @@ def marcar_nodo_inactivo(node_id):
     try:
         update_node_existente(node_id)
         return jsonify({"mensaje": f"Nodo {node_id} actualizado con activo=false"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
+@app.route("/nodes/<int:node_id>/activa", methods=["PUT"])
+def marcar_nodo_activa(node_id):
+    """
+    Espera un JSON con {"activa": true|false}
+    """
+    try:
+        payload = request.get_json(force=True)
+        if "activa" not in payload:
+            return jsonify({"error": "Se requiere el campo 'activa'"}), 400
+
+        nueva = bool(payload["activa"])
+        update_node_activa(driver, node_id, nueva)
+        return jsonify({
+            "mensaje": f"Nodo {node_id} actualizado con activa={nueva}"
+        }), 200
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

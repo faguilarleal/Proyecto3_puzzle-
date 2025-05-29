@@ -2,7 +2,13 @@ from algorithm import get_adjacent
 
 # instructions.py
 
+
 def format_grouped_instructions(grouped):
+    """
+    grouped: dict { (a,b): [ {emisor, receptor, posicion}, … ] }
+    Devuelve una lista de strings combinando A↔B cuando haya
+    dos mitades de la misma conexión.
+    """
     steps = []
     for (a, b), recs in grouped.items():
         if len(recs) == 2:
@@ -52,19 +58,21 @@ def assemble_all_grouped(driver, start_piece_id):
 
 def format_missing_instructions(missing):
     """
-    missing: lista de dicts {"from":a,"to":b,"pos":posicion}
+    missing: lista de dicts { from:a, to:b, pos:posición }
+    Devuelve avisos claros de huecos por piezas inactivas.
     """
     steps = ["\n---\nADVERTENCIAS (PIEZAS FALTANTES):"]
-    # agrupamos por pieza faltante para un mensaje más compacto
+    # Agrupamos todos los huecos por pieza faltante
     holes = {}
     for m in missing:
         holes.setdefault(m["to"], []).append(m)
+
     for hole_id, infos in holes.items():
         vecinos = [str(i["from"]) for i in infos]
-        lados   = [i["pos"] for i in infos]
+        lados   = [i["pos"]    for i in infos]
         steps.append(
             f"Tenga en cuenta que la pieza {hole_id} NO está disponible; "
-            f"quedará un hueco conectado a la(s) pieza(s) {', '.join(vecinos)} "
-            f"por el/los lado(s) {', '.join(lados)}."
+            f"quedará un hueco conectado a la(s) pieza(s) "
+            f"{', '.join(vecinos)} por el/los lado(s) {', '.join(lados)}."
         )
     return steps
