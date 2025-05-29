@@ -3,6 +3,8 @@ from neo4j import GraphDatabase
 from dotenv import load_dotenv
 from algorithm import get_adjacent
 from instructions import format_instructions
+from algorithm import assemble_all
+
 
 
 import json
@@ -136,6 +138,15 @@ def assemble_steps(piece_id):
         vecinos = session.execute_read(get_adjacent, piece_id)
     pasos = format_instructions(piece_id, vecinos)
     return jsonify(pasos), 200
+
+@app.route("/assemble/full/<int:piece_id>", methods=["GET"])
+def assemble_full(piece_id):
+    try:
+        steps = assemble_all(driver, piece_id)
+        return jsonify(steps), 200
+    except Exception as e:
+        return jsonify(error=str(e)), 500
+
 
 if __name__ == "__main__":
     app.run(debug=True)
