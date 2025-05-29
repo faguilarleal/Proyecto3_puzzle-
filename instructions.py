@@ -1,3 +1,5 @@
+from algorithm import get_adjacent
+
 # instructions.py
 
 def format_grouped_instructions(grouped):
@@ -22,3 +24,33 @@ def format_grouped_instructions(grouped):
                 f"por lado “{r['posicion']}”."
             )
     return steps
+
+
+def assemble_all_grouped(driver, start_piece_id):
+    visited = set()
+    all_conns = []
+
+    def dfs(tx, pid):
+        if pid in visited:
+            return
+        visited.add(pid)
+
+        vecinos = get_adjacent(tx, pid)
+        for v in vecinos:
+            all_conns.append({**v, "from": pid})
+            dfs(tx, v["id"])
+
+    with driver.session() as session:
+        session.read_transaction(dfs, start_piece_id)
+
+    # Agrupar conexiones por (a,b)
+    agrupados = {}
+    for conn in all_conns:
+        a = conn["from"]
+        b = conn["id"]
+        key = tuple(sorted([a, b]))
+        if key not in agrupados:
+            agrupados[key] = []
+        agrupados[key].append(conn)
+
+    return format_grouped_instructions(agrupados)

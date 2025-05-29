@@ -147,6 +147,11 @@ def update_node_existente(node_id):
             id=node_id
         )
         
+def reset_visitados():
+    with driver.session() as session:
+        session.run("MATCH (n:Piece) SET n.visitado = false")
+        session.run("MATCH ()-[r:es_adj_a]->() SET r.visitado = false")
+
 
 
 app = Flask(__name__)
@@ -219,6 +224,8 @@ def assemble_steps(piece_id):
 @app.route("/assemble/full/<int:piece_id>", methods=["GET"])
 def assemble_full(piece_id):
     try:
+        #reinicia el estado de todos los nodos y relaciones del grafo, para que puedan ser usados nuevamente en un recorrido desde cero, si se corre de nuevo 
+        reset_visitados()
         steps = assemble_all(driver, piece_id)
         return jsonify(steps), 200
     except Exception as e:
